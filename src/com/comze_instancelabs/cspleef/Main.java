@@ -2,6 +2,9 @@ package com.comze_instancelabs.cspleef;
 
 import java.util.HashMap;
 
+import net.milkbowl.vault.economy.Economy;
+import net.milkbowl.vault.economy.EconomyResponse;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.BlockState;
@@ -16,6 +19,7 @@ import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 
@@ -32,11 +36,25 @@ public class Main extends JavaPlugin implements Listener {
 	public static HashMap<Player, ItemStack[]> pinv = new HashMap<Player, ItemStack[]>();
 	public static int minplayers = 1;
 	public static int maxplayers = 10;
-
+	
+	public static Economy econ = null;
+	
 	@Override
 	public void onEnable(){
 		getServer().getPluginManager().registerEvents(this, this);
 	}
+	
+    private boolean setupEconomy() {
+        if (getServer().getPluginManager().getPlugin("Vault") == null) {
+            return false;
+        }
+        RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
+        if (rsp == null) {
+            return false;
+        }
+        econ = rsp.getProvider();
+        return econ != null;
+    }
 	
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args){
     	if(cmd.getName().equalsIgnoreCase("cspleef")){
@@ -283,6 +301,15 @@ public class Main extends JavaPlugin implements Listener {
 				leaveArena(p, arena);
 				p.sendMessage("§4You lost!");
 				if(getPlayerCountInArena(arena) < 2){
+					for(Player p_ : arenap.keySet()){
+						if(arenap.get(p_).equalsIgnoreCase(arena)){
+							// last man standing
+							EconomyResponse r = econ.depositPlayer(p_.getName(), 50D); //getConfig().getDouble("config.winning_reward"));
+	            			if(!r.transactionSuccess()) {
+	            				p_.sendMessage(String.format("An error occured: %s", r.errorMessage));
+	                        }
+						}
+					}
 					resetArena(arena);
 				}
 			}

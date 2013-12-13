@@ -8,4 +8,4 @@ permissions:
 commands:
    cspleef:
       description: Main command
-      usage: /thecore [name]
+      usage: /cspleef [name]

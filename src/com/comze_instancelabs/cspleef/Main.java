@@ -30,7 +30,7 @@ public class Main extends JavaPlugin implements Listener {
 
 	public static HashMap<Player, String> arenap = new HashMap<Player, String>();
 	public static HashMap<Player, ItemStack[]> pinv = new HashMap<Player, ItemStack[]>();
-	public static int minplayers = 3;
+	public static int minplayers = 1;
 	public static int maxplayers = 10;
 
 	@Override
@@ -48,6 +48,7 @@ public class Main extends JavaPlugin implements Listener {
     					String arenaname = args[1];
     					getConfig().set(arenaname + ".name", arenaname);
     					this.saveConfig();
+    					sender.sendMessage("§2Successfully saved arena.");
     				}
     			}else if(action.equalsIgnoreCase("setspawn")){
     				if(args.length > 1){
@@ -58,6 +59,7 @@ public class Main extends JavaPlugin implements Listener {
     					getConfig().set(arenaname + ".spawn.loc.y", p.getLocation().getBlockY());
     					getConfig().set(arenaname + ".spawn.loc.z", p.getLocation().getBlockZ());
     					this.saveConfig();
+    					sender.sendMessage("§2Successfully saved spawn.");
     				}
     			}else if(action.equalsIgnoreCase("setbounds")){
     				if(args.length > 2){
@@ -65,7 +67,7 @@ public class Main extends JavaPlugin implements Listener {
     					String arenaname = args[1];
     					String num = args[2];
     					if(!num.equalsIgnoreCase("1") && !num.equalsIgnoreCase("2")){
-    						p.sendMessage("§4Please provide 1 or 2 as seconds argument! /cspleef setbounds 1/2");
+    						p.sendMessage("§4Please provide 1 or 2 as seconds argument! /cspleef setbounds arena 1/2");
     						return false;
     					}
     					getConfig().set(arenaname + ".bounds.world", p.getWorld().getName());
@@ -73,6 +75,7 @@ public class Main extends JavaPlugin implements Listener {
     					getConfig().set(arenaname + ".bounds.loc" + num + ".y", p.getLocation().getBlockY() - 1);
     					getConfig().set(arenaname + ".bounds.loc" + num + ".z", p.getLocation().getBlockZ());
     					this.saveConfig();
+    					sender.sendMessage("§2Successfully saved bounds loc.");
     				}
     			}else if(action.equalsIgnoreCase("setlobby")){
     				if(args.length > 1){
@@ -83,12 +86,14 @@ public class Main extends JavaPlugin implements Listener {
     					getConfig().set(arenaname + ".lobby.loc.y", p.getLocation().getBlockY());
     					getConfig().set(arenaname + ".lobby.loc.z", p.getLocation().getBlockZ());
     					this.saveConfig();
+    					sender.sendMessage("§2Successfully saved lobby.");
     				}
     			}else if(action.equalsIgnoreCase("leave")){
     				Player p = (Player)sender;
     				leaveArena(p, arenap.get(p));
     			}
     		}
+    		return true;
     	}
     	return false;
     }
@@ -100,7 +105,7 @@ public class Main extends JavaPlugin implements Listener {
         	if(event.getPlayer().hasPermission("cspleef.sign")){
 	        	event.setLine(1, "[Spleef]");
 	        	if(!event.getLine(2).equalsIgnoreCase("")){
-	        		String arena = event.getLine(1);
+	        		String arena = event.getLine(2);
 	        		if(isValidArena(arena)){
 	        			getConfig().set(arena + ".sign.world", p.getWorld().getName());
 	        			getConfig().set(arena + ".sign.loc.x", event.getBlock().getLocation().getBlockX());
@@ -129,7 +134,7 @@ public class Main extends JavaPlugin implements Listener {
 	        {
 	            final Sign s = (Sign) event.getClickedBlock().getState();
 	            if(s.getLine(1).equalsIgnoreCase("[spleef]") && s.getLine(0).equalsIgnoreCase("§9[join]")){
-	            	String arena = s.getLine(1);
+	            	String arena = s.getLine(2);
 	            	if(isValidArena(arena)){
 	            		if(!arenap.containsKey(event.getPlayer())){
 	            			joinLobby(event.getPlayer(), arena);
@@ -218,6 +223,9 @@ public class Main extends JavaPlugin implements Listener {
     	if(!arenap.containsKey(p)){
     		arenap.put(p, arena);
     	}
+    	p.sendMessage("§2The game has started!");
+    	p.getInventory().clear();
+    	p.updateInventory();
     	p.teleport(new Location(getServer().getWorld(getConfig().getString(arena + ".spawn.world")), getConfig().getInt(arena + ".spawn.loc.x"), getConfig().getInt(arena + ".spawn.loc.y"), getConfig().getInt(arena + ".spawn.loc.z")));
     	p.getInventory().addItem(new ItemStack(Material.DIAMOND_SPADE, 1));
     	p.updateInventory();
@@ -230,10 +238,14 @@ public class Main extends JavaPlugin implements Listener {
     	p.updateInventory();
     	p.getInventory().setContents(pinv.get(p));
     	p.updateInventory();
+    	
+    	if(getPlayerCountInArena(arena) < 2){
+			resetArena(arena);
+		}
     }
     
     public boolean isValidArena(String arena){
-    	if(getConfig().isSet(arena + "name")){
+    	if(getConfig().isSet(arena + ".name")){
     		return true;
     	}
     	return false;
@@ -263,7 +275,7 @@ public class Main extends JavaPlugin implements Listener {
 	
 	@EventHandler
 	public void onPlayerMove(PlayerMoveEvent event){
-		if(arenap.containsKey(event.getPlayer().getName())){
+		if(arenap.containsKey(event.getPlayer())){
 			Player p = event.getPlayer();
 			String arena = arenap.get(p);
 			Location spawn = new Location(getServer().getWorld(getConfig().getString(arena + ".spawn.world")), getConfig().getInt(arena + ".spawn.loc.x"), getConfig().getInt(arena + ".spawn.loc.y"), getConfig().getInt(arena + ".spawn.loc.z"));

@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -11,6 +12,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
@@ -91,7 +93,34 @@ public class Main extends JavaPlugin implements Listener {
     	return false;
     }
 
-
+	@EventHandler
+    public void onSignChange(SignChangeEvent event) {
+        Player p = event.getPlayer();
+        if(event.getLine(1).toLowerCase().contains("[spleef]")){
+        	if(event.getPlayer().hasPermission("cspleef.sign")){
+	        	event.setLine(1, "[Spleef]");
+	        	if(!event.getLine(2).equalsIgnoreCase("")){
+	        		String arena = event.getLine(1);
+	        		if(isValidArena(arena)){
+	        			getConfig().set(arena + ".sign.world", p.getWorld().getName());
+	        			getConfig().set(arena + ".sign.loc.x", event.getBlock().getLocation().getBlockX());
+						getConfig().set(arena + ".sign.loc.y", event.getBlock().getLocation().getBlockY());
+						getConfig().set(arena + ".sign.loc.z", event.getBlock().getLocation().getBlockZ());
+						this.saveConfig();
+						p.sendMessage("§2Successfully created arena sign.");
+	        		}else{
+	        			p.sendMessage("§2The arena appears to be invalid (missing components or misstyped arena)!");
+	        			event.getBlock().breakNaturally();
+	        		}
+	        		event.setLine(0, "§9[JOIN]");
+	        		event.setLine(2, arena);
+	        		event.setLine(3, "0/" + Integer.toString(this.maxplayers));
+	        	}
+        	}
+        }
+	}
+	
+	
     @EventHandler
     public void onSignUse(PlayerInteractEvent event){
     	if (event.hasBlock() && event.getAction() == Action.RIGHT_CLICK_BLOCK)
@@ -99,11 +128,13 @@ public class Main extends JavaPlugin implements Listener {
 	        if (event.getClickedBlock().getType() == Material.SIGN_POST || event.getClickedBlock().getType() == Material.WALL_SIGN)
 	        {
 	            final Sign s = (Sign) event.getClickedBlock().getState();
-	            if(s.getLine(0).equalsIgnoreCase("[spleef]")){
+	            if(s.getLine(1).equalsIgnoreCase("[spleef]") && s.getLine(0).equalsIgnoreCase("§9[join]")){
 	            	String arena = s.getLine(1);
 	            	if(isValidArena(arena)){
 	            		if(!arenap.containsKey(event.getPlayer())){
-	            			joinLobby(event.getPlayer(), arena);	
+	            			joinLobby(event.getPlayer(), arena);
+	            			s.setLine(3, Integer.toString(this.getPlayerCountInArena(arena)) + "/" + Integer.toString(this.maxplayers));
+	            			s.update();
 	            		}else{
 	            			event.getPlayer().sendMessage("§4You're already in a game!");
 	            		}
@@ -124,6 +155,10 @@ public class Main extends JavaPlugin implements Listener {
     			joinArena(p, arena);
     		}
     	}
+    	
+    	Sign s = getSignFromArena(arena);
+    	s.setLine(0, "§4[FULL]");
+    	s.update();
     }
     
     public void resetArena(String arena){
@@ -132,6 +167,11 @@ public class Main extends JavaPlugin implements Listener {
     			leaveArena(p, arena);
     		}
     	}
+    	
+    	Sign s = getSignFromArena(arena);
+    	s.setLine(0, "§9[JOIN]");
+    	s.setLine(3, "0/" + Integer.toString(maxplayers));
+    	s.update();
     	
 		Location loc1 = new Location(getServer().getWorld(getConfig().getString(arena + ".bounds.world")), getConfig().getInt(arena + ".bounds.loc1.x"), getConfig().getInt(arena + ".bounds.loc1.y"), getConfig().getInt(arena + ".bounds.loc1.z"));
 		Location loc2 = new Location(getServer().getWorld(getConfig().getString(arena + ".bounds.world")), getConfig().getInt(arena + ".bounds.loc2.x"), getConfig().getInt(arena + ".bounds.loc2.y"), getConfig().getInt(arena + ".bounds.loc2.z"));
@@ -209,7 +249,17 @@ public class Main extends JavaPlugin implements Listener {
     	return count;
     }
     
-    
+    public Sign getSignFromArena(String arena){
+		Location b_ = new Location(getServer().getWorld(getConfig().getString(arena + ".sign.world")), getConfig().getInt(arena + ".sign.loc.x"), getConfig().getInt(arena + ".sign.loc.y"), getConfig().getInt(arena + ".sign.loc.z"));
+    	BlockState bs = b_.getBlock().getState();
+    	Sign s_ = null;
+    	if(bs instanceof Sign){
+    		s_ = (Sign)bs;
+    	}else{
+    		getLogger().info("Could not find sign: " + bs.getBlock().toString());
+    	}
+		return s_;
+	}
 	
 	@EventHandler
 	public void onPlayerMove(PlayerMoveEvent event){

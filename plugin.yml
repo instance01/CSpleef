@@ -1,0 +1,11 @@
+name: CSpleef
+main: com.comze_instancelabs.cspleef.Main
+version: 1.0
+author: instancelabs
+permissions:
+  cspleef.sign:
+    description: Gives access to create signs for joining games.
+commands:
+   cspleef:
+      description: Main command
+      usage: /thecore [name]

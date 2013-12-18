@@ -34,7 +34,7 @@ public class Main extends JavaPlugin implements Listener {
 
 	public static HashMap<Player, String> arenap = new HashMap<Player, String>();
 	public static HashMap<Player, ItemStack[]> pinv = new HashMap<Player, ItemStack[]>();
-	public static int minplayers = 1;
+	public static int minplayers = 2;
 	public static int maxplayers = 10;
 	
 	public static Economy econ = null;
@@ -151,21 +151,47 @@ public class Main extends JavaPlugin implements Listener {
 	        if (event.getClickedBlock().getType() == Material.SIGN_POST || event.getClickedBlock().getType() == Material.WALL_SIGN)
 	        {
 	            final Sign s = (Sign) event.getClickedBlock().getState();
-	            if(s.getLine(1).equalsIgnoreCase("[spleef]") && s.getLine(0).equalsIgnoreCase("§9[join]")){
-	            	String arena = s.getLine(2);
-	            	if(isValidArena(arena)){
-	            		if(!arenap.containsKey(event.getPlayer())){
-	            			joinLobby(event.getPlayer(), arena);
-	            			s.setLine(3, Integer.toString(this.getPlayerCountInArena(arena)) + "/" + Integer.toString(this.maxplayers));
-	            			s.update();
-	            		}else{
-	            			event.getPlayer().sendMessage("§4You're already in a game!");
-	            		}
-	            		
-	            		if(this.getPlayerCountInArena(arena) > (this.minplayers - 1)){
-	                		startArena(arena);
-	                	}
+	            if(s.getLine(1).equalsIgnoreCase("[spleef]")){
+	            	if(s.getLine(0).equalsIgnoreCase("§9[join]")){
+		            	String arena = s.getLine(2);
+		            	if(isValidArena(arena)){
+		            		if(!arenap.containsKey(event.getPlayer())){
+		            			joinLobby(event.getPlayer(), arena);
+		            			s.setLine(3, Integer.toString(this.getPlayerCountInArena(arena)) + "/" + Integer.toString(this.maxplayers));
+		            			s.update();
+		            			if(maxplayers / this.getPlayerCountInArena(arena) > 0.74){
+		            				s.setLine(0, "§6[VIP]");
+		            			}
+		            		}else{
+		            			event.getPlayer().sendMessage("§4You're already in a game!");
+		            		}
+		            		
+		            		if(this.getPlayerCountInArena(arena) > (this.minplayers - 1)){
+		                		startArena(arena);
+		                	}
+		            	}	
+	            	}else if(s.getLine(0).equalsIgnoreCase("§6[vip]")){
+	            		String arena = s.getLine(2);
+	            		if(event.getPlayer().hasPermission("TGCSpleef.VIP")){
+		            		if(isValidArena(arena)){
+			            		if(!arenap.containsKey(event.getPlayer())){
+			            			joinLobby(event.getPlayer(), arena);
+			            			s.setLine(3, Integer.toString(this.getPlayerCountInArena(arena)) + "/" + Integer.toString(this.maxplayers));
+			            			s.update();
+			            		}else{
+			            			event.getPlayer().sendMessage("§4You're already in a game!");
+			            		}
+			            		
+			            		if(this.getPlayerCountInArena(arena) > (this.minplayers - 1)){
+			                		startArena(arena);
+			                	}	
+		            		}
+		            	
+		            	}else{
+		            		event.getPlayer().sendMessage("§4Unfortunately you are not VIP.");
+		            	}
 	            	}
+	            	
 	            }
 	        }
 	    }

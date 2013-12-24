@@ -1,6 +1,7 @@
 package com.comze_instancelabs.cspleef;
 
 import java.util.HashMap;
+import java.util.Random;
 
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
@@ -147,7 +148,7 @@ public class Main extends JavaPlugin implements Listener {
 	
     @EventHandler
     public void onSignUse(PlayerInteractEvent event){
-    	if (event.hasBlock() && event.getAction() == Action.RIGHT_CLICK_BLOCK)
+    	if (event.hasBlock())
 	    {
 	        if (event.getClickedBlock().getType() == Material.SIGN_POST || event.getClickedBlock().getType() == Material.WALL_SIGN)
 	        {
@@ -167,9 +168,9 @@ public class Main extends JavaPlugin implements Listener {
 		            			event.getPlayer().sendMessage("§4You're already in a game!");
 		            		}
 		            		
-		            		if(this.getPlayerCountInArena(arena) > (this.minplayers - 1)){
+		            		/*if(this.getPlayerCountInArena(arena) > (this.minplayers - 1)){
 		                		startArena(arena);
-		                	}
+		                	}*/
 		            	}	
 	            	}else if(s.getLine(0).equalsIgnoreCase("§6[vip]")){
 	            		String arena = s.getLine(2);
@@ -183,9 +184,9 @@ public class Main extends JavaPlugin implements Listener {
 			            			event.getPlayer().sendMessage("§4You're already in a game!");
 			            		}
 			            		
-			            		if(this.getPlayerCountInArena(arena) > (this.minplayers - 1)){
+			            		/*if(this.getPlayerCountInArena(arena) > (this.minplayers - 1)){
 			                		startArena(arena);
-			                	}	
+			                	}*/	
 		            		}
 		            	
 		            	}else{
@@ -194,6 +195,10 @@ public class Main extends JavaPlugin implements Listener {
 	            	}
 	            	
 	            }
+	        }else if(event.getClickedBlock().getType() == Material.SNOW_BLOCK || event.getClickedBlock().getType() == Material.ICE || event.getClickedBlock().getType() == Material.PACKED_ICE){
+	        	if(arenap.containsKey(event.getPlayer())){
+	        		event.getClickedBlock().setType(Material.AIR);	
+	        	}
 	        }
 	    }
     }
@@ -212,6 +217,8 @@ public class Main extends JavaPlugin implements Listener {
     }
     
     public void resetArena(String arena){
+    	Random r = new Random();
+    	
     	for(Player p : arenap.keySet()){
     		if(arenap.get(p).equalsIgnoreCase(arena)){
     			leaveArena(p, arena);
@@ -248,23 +255,34 @@ public class Main extends JavaPlugin implements Listener {
 		
 		for(int x = 0; x <= width; x++){
 			for(int z = 0; z <= length; z++){
-				c.getWorld().getBlockAt(c.getLowLoc().getBlockX() + x, c.getLowLoc().getBlockY(), c.getLowLoc().getBlockZ() + z).setType(Material.SNOW_BLOCK);
+				int f = r.nextInt(3);
+				if(f == 0){
+					c.getWorld().getBlockAt(c.getLowLoc().getBlockX() + x, c.getLowLoc().getBlockY(), c.getLowLoc().getBlockZ() + z).setType(Material.SNOW_BLOCK);
+				}else if(f == 1){
+					c.getWorld().getBlockAt(c.getLowLoc().getBlockX() + x, c.getLowLoc().getBlockY(), c.getLowLoc().getBlockZ() + z).setType(Material.PACKED_ICE);
+				}else{
+					c.getWorld().getBlockAt(c.getLowLoc().getBlockX() + x, c.getLowLoc().getBlockY(), c.getLowLoc().getBlockZ() + z).setType(Material.ICE);
+				}
 			}
 		}
     }
     
     
     public void joinLobby(Player p, String arena){
+    	pinv.put(p, p.getInventory().getContents());
     	p.sendMessage("§3You need " + Integer.toString(minplayers) + " Players to start a game! Waiting for others to join ..");
     	if(!arenap.containsKey(p)){
     		arenap.put(p, arena);
     	}
     	p.teleport(new Location(getServer().getWorld(getConfig().getString(arena + ".lobby.world")), getConfig().getInt(arena + ".lobby.loc.x"), getConfig().getInt(arena + ".lobby.loc.y"), getConfig().getInt(arena + ".lobby.loc.z")));
+    	
+    	if(this.getPlayerCountInArena(arena) > (this.minplayers - 1)){
+    		startArena(arena);
+    	}
     }
     
     
     public void joinArena(Player p, String arena){
-    	pinv.put(p, p.getInventory().getContents());
     	if(!arenap.containsKey(p)){
     		arenap.put(p, arena);
     	}
@@ -335,6 +353,7 @@ public class Main extends JavaPlugin implements Listener {
 	            			if(!r.transactionSuccess()) {
 	            				p_.sendMessage(String.format("An error occured: %s", r.errorMessage));
 	                        }
+	            			p_.sendMessage("§2You won!");
 						}
 					}
 					resetArena(arena);
@@ -346,7 +365,7 @@ public class Main extends JavaPlugin implements Listener {
 	@EventHandler
 	public void onBlockBreak(BlockBreakEvent event){
 		if(arenap.containsKey(event.getPlayer())){
-			if(event.getBlock().getType() != Material.SNOW_BLOCK){
+			if(event.getBlock().getType() != Material.SNOW_BLOCK && event.getBlock().getType() != Material.ICE && event.getBlock().getType() != Material.PACKED_ICE){
 				event.setCancelled(true);
 			}
 		}
